@@ -34,8 +34,7 @@ def get_by_api(cookie):
     res = requests.get(url, cookies=jar, headers=headers)
 
 
-def get_by_html(cookie, qq):
-    conn = redis.Redis(host='127.0.0.1', port=6379)
+def get_by_html(conn, cookie, qq):
     bf = BloomFilter()
     url = "https://h5.qzone.qq.com/mqzone/profile?starttime={}&hostuin={}".format(
         int(round(time.time() * 1000)), qq)
@@ -49,6 +48,9 @@ def get_by_html(cookie, qq):
         'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X; zh-CN) AppleWebKit/537.51.1 (KHTML, like Gecko) Mobile/16A5288q UCBrowser/12.0.3.1077 Mobile  AliApp(TUnionSDK/0.1.20.3)'
     }
     res = requests.get(url, cookies=jar, headers=headers)
+    if "空间主人设置了访问权限" in res.text:
+        print('{} 设置了访问权限'.format(qq))
+        return
     if "请重新登录" in res.text:
         print(username)
         # cookie已失效
@@ -76,8 +78,9 @@ def get_by_html(cookie, qq):
             likeman = re.search(re.compile(r'"like":{(.*)},"operation"', re.S), m.group())
             # print(likeman.group(1))
             # print('\n')
-            for uin in re.finditer(re.compile(r'"uin":"(.*?)"', re.S), likeman.group(1)):
-                likemans.append(uin.group(1))
+            if likeman:
+                for uin in re.finditer(re.compile(r'"uin":"(.*?)"', re.S), likeman.group(1)):
+                    likemans.append(uin.group(1))
         # 获取图片
         for photo in re.finditer(re.compile(r'"photourl":(.*?){"busi_param"', re.S), m.group()):
             url = re.search(re.compile(r'"url":"(.*?)"', re.S), photo.group())
@@ -93,8 +96,15 @@ def get_by_html(cookie, qq):
 
 
 def main():
+    conn = redis.Redis(host='127.0.0.1', port=6379)
     cookie = Cookie()
-    get_by_html(cookie)
+    start_url = ['2239509957', '1145391165', '648683283']
+    for qq in start_url:
+        get_by_html(conn, cookie, qq)
+
+    while True:
+        qq = conn.lpop("user_list")
+        get_by_html(conn, cookie, qq.decode('utf8'))
 
 
 if __name__ == "__main__":
