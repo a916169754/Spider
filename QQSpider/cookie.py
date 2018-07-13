@@ -134,10 +134,10 @@ class Cookie(object):
         self.options.add_argument('lang=zh_CN.UTF-8')
         self.options.add_argument(
             'user-agent=" Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X; zh-CN) AppleWebKit/537.51.1 (KHTML, like Gecko) Mobile/16A5288q UCBrowser/12.0.3.1077 Mobile  AliApp(TUnionSDK/0.1.20.3)"')
-        for user in settings.user_list:
-            if self.conn.exists('{}-cookies'.format(user[0])):
+        for username, password in settings.user_list.items():
+            if self.conn.exists('{}-cookies'.format(username)):
                 continue
-            self.set_cookie(user[0], user[1])
+            self.set_cookie(username, password)
 
     def set_cookie(self, username, password):
         """

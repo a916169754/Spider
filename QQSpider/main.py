@@ -4,7 +4,10 @@ import redis
 import re
 import requests
 
+from pymongo import MongoClient
+
 from QQSpider.cookie import Cookie
+from QQSpider.ip import IpPool
 from QQSpider.util import BloomFilter
 from QQSpider import settings
 
@@ -34,12 +37,7 @@ def get_by_api(cookie):
     res = requests.get(url, cookies=jar, headers=headers)
 
 
-def get_by_html(conn, cookie, qq):
-    bf = BloomFilter()
-    url = "https://h5.qzone.qq.com/mqzone/profile?starttime={}&hostuin={}".format(
-        int(round(time.time() * 1000)), qq)
-    username, cookies = cookie.get_by_random()
-    qzonetoken = cookies.pop('qzonetoken')
+def get_page(url, cookies, ip):
     print(url)
     jar = requests.cookies.RequestsCookieJar()
     for cookie_key in cookies:
@@ -47,17 +45,45 @@ def get_by_html(conn, cookie, qq):
     headers = {
         'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X; zh-CN) AppleWebKit/537.51.1 (KHTML, like Gecko) Mobile/16A5288q UCBrowser/12.0.3.1077 Mobile  AliApp(TUnionSDK/0.1.20.3)'
     }
-    res = requests.get(url, cookies=jar, headers=headers)
+    if ip:
+        proxies = {
+            "https": ip  # 代理ip
+        }
+        res = requests.get(url, cookies=jar, headers=headers, proxies=proxies)
+    else:
+        res = requests.get(url, cookies=jar, headers=headers)
+    return res
+
+
+def get_by_html(conn, cookie, qq, mongodb, ip_pool=None):
+    my_set = mongodb.test_set
+    my_photo = mongodb.my_photo
+
+    bf = BloomFilter()
+    url = "https://h5.qzone.qq.com/mqzone/profile?starttime={}&hostuin={}".format(
+        int(round(time.time() * 1000)), qq)
+    username, cookies = cookie.get_by_random()
+    username = username.split('-')[0]
+    qzonetoken = cookies.pop('qzonetoken')
+    if ip_pool:
+        ip_data = ip_pool.get_ip('{}-ip'.format(username))
+        ip = "{}:{}".format(ip_data[b'ip'].decode(), ip_data[b'port'].decode())
+    else:
+        ip = None
+    try:
+        res = get_page(url, cookies, ip)
+    except:
+        return
     if "空间主人设置了访问权限" in res.text:
         print('{} 设置了访问权限'.format(qq))
         return
     if "请重新登录" in res.text:
-        print(username)
+        print('登录失效', username)
         # cookie已失效
-        username = username.split('-')[0]
-        for num in settings.user_list:
-            if num[0] == username:
-                cookie.set_cookie(username, num[1])
+        cookie.set_cookie(username, settings.user_list[username])
+        cookies = cookie.get_by_id(username)
+        qzonetoken = cookies.pop('qzonetoken')
+        res = get_page(url, cookies, '')
     pattern = re.compile(r'"mine",data\s+:(.*),times', re.S)
     match = re.search(pattern, res.text.replace('\n', ''))
 
@@ -72,6 +98,7 @@ def get_by_html(conn, cookie, qq):
         if summary:
             print(summary.group(1))
             summary = re.sub(re.compile(r'\[em].+?[/em]]'), r' ', summary.group(1))
+            my_set.insert({'summary': summary})
             # print(summary)
             # 查找点赞列表
             # print(m.group())
@@ -84,6 +111,7 @@ def get_by_html(conn, cookie, qq):
         # 获取图片
         for photo in re.finditer(re.compile(r'"photourl":(.*?){"busi_param"', re.S), m.group()):
             url = re.search(re.compile(r'"url":"(.*?)"', re.S), photo.group())
+            my_photo.insert({'photo_url': url.group(1)})
             print(url.group(1))
     # print(summary)
 
@@ -96,16 +124,37 @@ def get_by_html(conn, cookie, qq):
 
 
 def main():
-    conn = redis.Redis(host='127.0.0.1', port=6379)
+    redis_conn = redis.Redis(host='127.0.0.1', port=6379)
     cookie = Cookie()
+    ip_pool = IpPool()
+
+    conn = MongoClient('127.0.0.1', 27017)
+    mongodb = conn.qqdb
+
     start_url = ['2239509957', '1145391165', '648683283']
     for qq in start_url:
-        get_by_html(conn, cookie, qq)
+        get_by_html(redis_conn, cookie, qq, mongodb)
 
     while True:
-        qq = conn.lpop("user_list")
-        get_by_html(conn, cookie, qq.decode('utf8'))
+        qq = redis_conn.lpop("user_list")
+        qq = qq.decode('utf8')
+        get_by_html(redis_conn, cookie, qq, mongodb, ip_pool)
 
 
 if __name__ == "__main__":
     main()
+    # proxies = {
+    #     "http": "http://118.190.95.26:9001"  # 代理ip
+    # }
+    # headers = {
+    #     "User_Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1",
+    #     "Referer": "http://www.baidu.com"
+    # }
+    #
+    # http_url = "http://icanhazip.com"
+    # res = requests.get(url=http_url, headers=headers, proxies=proxies, timeout=30)
+    # if res.status_code == 200:
+    #     print("访问网页成功: ", res.content)
+    # else:
+    #     print("代理ip错误: ", res.status_code)
+
