@@ -1,5 +1,4 @@
 import json
-import redis
 import datetime
 
 import requests
@@ -11,8 +10,8 @@ class IpPool(object):
     """
     IP
     """
-    def __init__(self):
-        self.conn = redis.Redis(host='127.0.0.1', port=6379)
+    def __init__(self, redis_conn):
+        self.conn = redis_conn
 
         self.__update()
 
@@ -24,9 +23,10 @@ class IpPool(object):
 
     @staticmethod
     def get_ip_data(num):
+        """使用收费代理"""
         get_ip_url = "http://webapi.http.zhimacangku.com/getip?" \
                      "num={}&type=2&pro=440000&city=440400&yys=0" \
-                     "&port=1&pack=8898&ts=1&ys=0&cs=0&lb=1&sb=0" \
+                     "&port=11&pack=8898&ts=1&ys=0&cs=0&lb=1&sb=0" \
                      "&pb=4&mr=1&regions=".format(num)
         res = requests.get(get_ip_url)
         res_json = json.loads(res.text)

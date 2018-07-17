@@ -1,3 +1,5 @@
+# 账号
+
 user_list = {'3452197744': 'waljl1314',
              '13142174521': 'waljl1314',
              '2147349090': 'wallace19741130',
@@ -6,9 +8,20 @@ user_list = {'3452197744': 'waljl1314',
              '2894182874': '1162312401',
              '1170505489': 'iwsmkk352503',
              '1294907432': 'bxkser202252',
-             '1104202152': 'sbwrfe143274'
-             }
-# user_list = {'2147349090': 'wallace19741130'}
+             '1104202152': 'sbwrfe143274'}
+
+# 数据库后端配置
+
+redis_host = "127.0.0.1"
+
+redis_port = 6379
+
+mongo_host = "127.0.0.1"
+
+mongo_port = 27017
+
+# url
+
 login_url = 'https://ui.ptlogin2.qq.com/cgi-bin/login?pt_hide_ad=1&style=9&pt_ttype=1&appid=549000929&pt_no_auth=1&pt_wxtest=1&daid=5&s_url=https%3A%2F%2Fh5.qzone.qq.com%2Fmqzone%2Findex'
 
 get_feeds_url = "https://mobile.qzone.qq.com/get_feeds?qzonetoken=9cca29fc0f7f600c97ec61b800c74901324993649ca5bfd8b846350688d53aa926986bca2cffcaf17fb5cdfd9b35a85da0ca&g_tk=1203482148&hostuin={qq_num}&res_type=2&res_attach=att%3Dback%255Fserver%255Finfo%253Doffset%25253D6%252526total%25253D7%252526basetime%25253D1530740565%252526feedsource%25253D0%2526lastrefreshtime%253D1531139787%2526lastseparatortime%253D0%2526loadcount%253D0%26tl%3D1530740565&refresh_type=2&format=json"

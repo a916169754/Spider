@@ -1,17 +1,16 @@
 # -*- coding: UTF-8 -*-
 import time
 import json
-import redis
 import re
 import requests
-import settings
 import random
 import cv2
 import numpy as np
 
-
 from PIL import Image
 from io import BytesIO
+
+from QQSpider import settings
 
 # from pynput.mouse import Button, Controller
 
@@ -127,8 +126,8 @@ class Cookie(object):
     """
     维护cookie池
     """
-    def __init__(self):
-        self.conn = redis.Redis(host='127.0.0.1', port=6379)
+    def __init__(self, redis_conn):
+        self.conn = redis_conn
 
         self.options = webdriver.ChromeOptions()
         self.options.add_argument('lang=zh_CN.UTF-8')

@@ -1,5 +1,3 @@
-import redis
-
 from hashlib import md5
 
 
@@ -16,16 +14,14 @@ class SimpleHash(object):
 
 
 class BloomFilter(object):
-    def __init__(self, host='localhost', port=6379, db=0, block_num=1, key='bloomfilter'):
+    def __init__(self, redis_conn, block_num=1, key='bloomfilter'):
         """
         Args:
-            host: redis host
-            port: redis port
-            db: redis db
+            redis_conn: redis连接
             block_num: 去重块的数量
             key: key name
         """
-        self.server = redis.Redis(host=host, port=port, db=db)
+        self.server = redis_conn
         self.bit_size = 1 << 31
         self.seeds = [5, 7, 11, 13, 31, 37, 61]
         self.key = key
