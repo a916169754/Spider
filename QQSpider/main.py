@@ -1,7 +1,6 @@
 import time
-import json
+import random
 import redis
-import re
 import functools
 import requests
 import asyncio
@@ -64,8 +63,8 @@ async def get_html(qq, cookies, loop, ip=None):
                 requests.get, url, cookies=jar, headers=headers
             )
         res = await loop.run_in_executor(None, func)
-    except Exception as e:
-        return False, e
+    except requests.exceptions.RequestException:
+        return False, 'timeout'
     finally:
         if "空间主人设置了访问权限" in res.text:
             return False, '403'
@@ -80,7 +79,7 @@ def start_loop(loop):
     loop.run_forever()
 
 
-async def do_work(qq, cookie, ip_pool, redis_conn, my_set, my_photo, bf, new_loop):
+async def do_work(qq, cookie, ip_pool, redis_conn, my_set, my_photo, bf, new_loop, task_list):
     # 随机获取cookie
     username, cookies = cookie.get_by_random()
     username = username.split('-')[0]
@@ -109,7 +108,18 @@ async def do_work(qq, cookie, ip_pool, redis_conn, my_set, my_photo, bf, new_loo
         if html_or_err == 'invalid_cookie':
             # cookie已失效, 更新该cookie并将qq重现放回待爬队列
             cookie.set_cookie(username, settings.user_list[username])
-        redis_conn.rpush('user_list', qq)
+            redis_conn.rpush('user_list', qq)
+        elif html_or_err == '403':
+            print("403: ", qq)
+        elif html_or_err == 'timeout':
+            # 连接超时，重新获取代理
+            time.sleep(2)  # 因为用的代理2s只能获取一次
+            ip_pool.update_ip(qq + '_ip')
+            redis_conn.rpush('user_list', qq)
+    # 慢一点，不然会被封号的
+    time.sleep(random.randint(1, 3))
+    # 从任务队列中移除
+    task_list.remove(qq)
 
 
 def main():
@@ -136,11 +146,17 @@ def main():
     t.setDaemon(True)
     t.start()
     try:
+        task_list = []
         while True:
+            # 限制任务数
+            if len(task_list) == 10:
+                time.sleep(1)
+                break
             _, qq = redis_conn.blpop("user_list")
             qq = qq.decode('utf8')
+            task_list.append(qq)
             asyncio.run_coroutine_threadsafe(
-                do_work(qq, cookie, ip_pool, redis_conn, my_set, my_photo, bf, new_loop),
+                do_work(qq, cookie, ip_pool, redis_conn, my_set, my_photo, bf, new_loop, task_list),
                 new_loop
             )
     except Exception as e:
