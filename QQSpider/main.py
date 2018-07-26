@@ -90,7 +90,6 @@ async def do_work(qq, cookie, ip_pool, redis_conn, my_set, my_photo, bf, new_loo
     ip_data = ip_pool.get_ip('{}-ip'.format(username))
     ip = "{}:{}".format(ip_data[b'ip'].decode(), ip_data[b'port'].decode())
 
-    print(1)
     success, html_or_err = await get_html(qq, cookies, new_loop, ip)
     if success:
         # 处理页面
@@ -123,11 +122,10 @@ def main():
     ip_pool = IpPool(redis_conn)
     bf = BloomFilter(redis_conn)
 
-    start_list = ['2239509957', '1145391165', '648683283']
+    start_list = ['***', '***', '***']
 
     for qq in start_list:
         if not bf.exists(qq.encode('utf8')):
-            print(11)
             redis_conn.rpush('user_list', qq)
             bf.insert(qq.encode('utf8'))
     # 在子线程中开启事件循环

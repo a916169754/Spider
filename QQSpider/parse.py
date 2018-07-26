@@ -32,7 +32,6 @@ def parse_profile(text: str) -> dict:
         # 获取动态
         summary = re.search(re.compile(r'"summary":{"summary":"(.+?)"}', re.S), m.group())
         if summary:
-            print(summary.group(1))
             summary = re.sub(re.compile(r'\[em].+?[/em]]'), r' ', summary.group(1))
             summary_list.append(summary)
             # 查找点赞列表

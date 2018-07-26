@@ -24,10 +24,7 @@ class IpPool(object):
     @staticmethod
     def get_ip_data(num):
         """使用收费代理"""
-        get_ip_url = "http://webapi.http.zhimacangku.com/getip?" \
-                     "num={}&type=2&pro=440000&city=440400&yys=0" \
-                     "&port=11&pack=8898&ts=1&ys=0&cs=0&lb=1&sb=0" \
-                     "&pb=4&mr=1&regions=".format(num)
+        get_ip_url = "aa{}".format(num)
         res = requests.get(get_ip_url)
         res_json = json.loads(res.text)
         return res_json['data']
