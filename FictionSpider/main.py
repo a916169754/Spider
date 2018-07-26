@@ -137,7 +137,7 @@ def main():
     #         fiction = fiction.decode()
     #         fiction_url = fiction.split('--')[1]
     #         fiction_title = fiction.split('--')[0]
-    #         coroutine = get_fiction_content(redis_conn, ip_pool, fiction_url, fiction_title, loop)
+    #         coroutine = async_get_fiction_content(redis_conn, ip_pool, fiction_url, fiction_title, loop)
     #         tasks.append(asyncio.ensure_future(coroutine))
     # loop.run_until_complete(asyncio.wait(tasks))
     #  使用多线程
