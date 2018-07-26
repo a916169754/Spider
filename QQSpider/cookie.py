@@ -151,6 +151,7 @@ class Cookie(object):
         # 设置隐式等待
         driver.implicitly_wait(10)
         driver.set_window_size(1366, 768)
+        driver.delete_all_cookies()
 
         driver.get(settings.login_url)
         driver.find_element_by_id('u').click()

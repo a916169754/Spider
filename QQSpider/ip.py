@@ -18,6 +18,11 @@ class IpPool(object):
     def __update(self):
         ip_date = IpPool.get_ip_data(len(user_list))
         for index, username in enumerate(user_list):
+            ip_info = self.conn.hgetall(username + '-ip')
+            if ip_info:
+                expire_time = datetime.datetime.strptime(ip_info[b'expire_time'].decode(), '%Y-%m-%d %H:%M:%S')
+                if expire_time > datetime.datetime.today():
+                    break
             ip_info = ip_date[index]
             self.set_ip('{}-ip'.format(username), ip_info['ip'], ip_info['port'], ip_info['expire_time'])
 
@@ -49,4 +54,9 @@ class IpPool(object):
         if expire_time < datetime.datetime.today():
             ip_info = IpPool.get_ip_data(1)[0]
             ip_info = self.set_ip(key, ip_info['ip'], ip_info['port'], ip_info['expire_time'])
+        return ip_info
+
+    def update_ip(self, key):
+        ip_info = IpPool.get_ip_data(1)[0]
+        ip_info = self.set_ip(key, ip_info['ip'], ip_info['port'], ip_info['expire_time'])
         return ip_info
